@@ -23,11 +23,11 @@
 #include <fstream>
 #include <typeinfo>
 #include <tuple>
+#include <cstdlib>
 #include <cstring>
 #include <algorithm>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <dirent.h>
 #include <unistd.h>
 #include <climits>
@@ -39,6 +39,18 @@
 /*
  * Supported targets
  */
+
+static void 
+  _setenv(const char *name, const char *value, int flag) { 
+  #ifdef HAVE_SETENV 
+    setenv(name, value, flag); 
+  #else 
+    int len = strlen(value)+1+strlen(value)+1; 
+    char *str = (char *)malloc(len); 
+    sprintf(str, "%s=%s", name, value); 
+    putenv(str); 
+  #endif 
+  } 
 
 enum {
     TARGET_WIN32 = 0,
@@ -83,11 +95,11 @@ static constexpr char COMMANDPREFIX[] = "-wc-";
  */
 
 static constexpr const char* CXXINCLUDEBASE[] = {
-    "/usr",
-    "/usr/lib/gcc",
-    "/usr/local/include/c++",
-    "/usr/include/c++",
-    "/opt"
+    "\\usr",
+    "\\usr\\lib\\gcc",
+    "\\usr\\local\\include\\c++",
+    "\\usr\\include\\c++",
+    "\\opt"
 };
 
 /*
@@ -95,9 +107,9 @@ static constexpr const char* CXXINCLUDEBASE[] = {
  */
 
 static constexpr const char* STDINCLUDEBASE[] = {
-    "/usr",
-    "/usr/local",
-    "/opt"
+    "\\usr",
+    "\\usr\\local",
+    "\\opt"
 };
 #endif
 
@@ -117,7 +129,7 @@ static bool findcxxheaders(const char *target, commandargs &cmdargs)
         static std::stringstream d;
 
         clear(d);
-        d << dir << file << "/" << _target;
+        d << dir << file << "\\" << _target;
 
         return !stat(d.str().c_str(), &st);
     };
@@ -128,7 +140,7 @@ static bool findcxxheaders(const char *target, commandargs &cmdargs)
         static struct stat st;
 
         file = cxxheaderdir;
-        file += "/";
+        file += "\\";
         file += "iostream";
 
         return !stat(file.c_str(), &st);
@@ -142,7 +154,7 @@ static bool findcxxheaders(const char *target, commandargs &cmdargs)
         if (mingw)
         {
             mingwheaderdir = cxxheaderdir;
-            mingwheaderdir += "/";
+            mingwheaderdir += "\\";
             mingwheaderdir += target;
 
             cxxpaths.push_back(mingwheaderdir);
@@ -159,8 +171,8 @@ static bool findcxxheaders(const char *target, commandargs &cmdargs)
              */
 
             cxxheaders = stddir;
-            cxxheaders += "/c++";
-            cxxheaders += "/";
+            cxxheaders += "\\c++";
+            cxxheaders += "\\";
 
             if (checkheaderdir(cxxheaders))
             {
@@ -197,7 +209,7 @@ static bool findcxxheaders(const char *target, commandargs &cmdargs)
 
             cxxheaders = root;
             cxxheaders += cxxinclude;
-            cxxheaders += "/";
+            cxxheaders += "\\";
 
             mv = findhighestcompilerversion(cxxheaders.c_str(),
                                             checkmingwheaders);
@@ -223,9 +235,9 @@ static bool findcxxheaders(const char *target, commandargs &cmdargs)
 
             cxxheaders  = root;
             cxxheaders += cxxinclude;
-            cxxheaders += "/";
+            cxxheaders += "\\";
             cxxheaders += target;
-            cxxheaders += "/";
+            cxxheaders += "\\";
 
             mv = findhighestcompilerversion(cxxheaders.c_str(),
                                             checkmingwheaders);
@@ -236,7 +248,7 @@ static bool findcxxheaders(const char *target, commandargs &cmdargs)
             mingwheaders = cxxheaders;
 
             cxxheaders += mv.s;
-            cxxheaders += "/include/c++";
+            cxxheaders += "\\include\\c++";
 
             if (checkheaderdir(cxxheaders))
             {
@@ -255,9 +267,9 @@ static bool findcxxheaders(const char *target, commandargs &cmdargs)
 
             cxxheaders = root;
             cxxheaders += cxxinclude;
-            cxxheaders += "/";
+            cxxheaders += "\\";
             cxxheaders += target;
-            cxxheaders += "/";
+            cxxheaders += "\\";
 
             mv = findhighestcompilerversion(cxxheaders.c_str());
 
@@ -265,7 +277,7 @@ static bool findcxxheaders(const char *target, commandargs &cmdargs)
                 continue;
 
             cxxheaders += mv.s;
-            cxxheaders += "/include/c++";
+            cxxheaders += "\\include\\c++";
 
             if (!checkmingwheaders(cxxheaders.c_str(), ""))
                 continue;
@@ -281,7 +293,7 @@ static bool findcxxheaders(const char *target, commandargs &cmdargs)
         return false;
     };
 
-    root = stdpaths[0] + "/../../..";
+    root = stdpaths[0] + "\\..\\..\\..";
     if (findheaders()) return true;
 
     root.clear();
@@ -298,7 +310,7 @@ static bool findintrinheaders(commandargs &cmdargs, const std::string &clangdir)
     {
         if (!cv.num()) return false;
 
-        intrindir << cv.s << "/include";
+        intrindir << cv.s << "\\include";
 
         if (!stat(intrindir.str().c_str(), &st) && S_ISDIR(st.st_mode) &&
             !cmdargs.nointrinsics)
@@ -314,21 +326,21 @@ static bool findintrinheaders(commandargs &cmdargs, const std::string &clangdir)
     {
         clear(intrindir);
 
-        intrindir << clangdir << dir << "/";
+        intrindir << clangdir << dir << "\\";
         cv = findhighestcompilerversion(intrindir.str().c_str());
 
         return trydir();
     };
 
-    if (checkdir("/../lib/clang"))
+    if (checkdir("\\..\\lib\\clang"))
         return true;
 
 #if defined(__x86_64__) || defined(__LP64__)
-    if (checkdir("/../lib64/clang"))
+    if (checkdir("\\..\\lib64\\clang"))
         return true;
 #endif
 
-    return checkdir("/../include/clang");
+    return checkdir("\\..\\include\\clang");
 }
 
 static bool findstdheader(const char *target, commandargs &cmdargs)
@@ -344,7 +356,7 @@ static bool findstdheader(const char *target, commandargs &cmdargs)
         {
             if (!stat(dir.c_str(), &st) && S_ISDIR(st.st_mode))
             {
-                std::string filecheck = dir + "/stdlib.h";
+                std::string filecheck = dir + "\\stdlib.h";
 
                 if (stat(filecheck.c_str(), &st))
                     return false;
@@ -363,26 +375,26 @@ static bool findstdheader(const char *target, commandargs &cmdargs)
         };
 
         dir = stdinclude;
-        dir += "/";
+        dir += "\\";
         dir += target;
-        dir += "/include";
+        dir += "\\include";
 
         if (trydir(dir))
             return true;
 
         dir = stdinclude;
-        dir += "/";
+        dir += "\\";
         dir += target;
-        dir += "/sys-root/mingw/include";
+        dir += "\\sys-root\\mingw\\include";
 
         if (trydir(dir))
             return true;
 
         // MXE
         dir = stdinclude;
-        dir += "/usr/";
+        dir += "\\usr\\";
         dir += target;
-        dir += "/include";
+        dir += "\\include";
 
         if (trydir(dir))
             return true;
@@ -396,13 +408,13 @@ static bool findstdheader(const char *target, commandargs &cmdargs)
 
         do
         {
-            if (*p == ':') p++;
+            if (*p == ';') p++;
 
-            while (*p && *p != ':')
+            while (*p && *p != ';')
                 path += *p++;
 
-            if (path.find_last_of("/bin") != std::string::npos)
-                path.resize(path.size()-STRLEN("/bin"));
+            if (path.find_last_of("\\bin") != std::string::npos)
+                path.resize(path.size()-STRLEN("\\bin"));
 
             if (checkdir(path.c_str()))
                 return true;
@@ -546,14 +558,14 @@ void concatenvvariable(const char *var, const std::string val, std::string *nval
     std::string tmp;
     if (!nval) nval = &tmp;
     *nval = val;
-
+    
     if (char *oldval = getenv(var))
     {
-        *nval += ":";
+        *nval += ";";
         *nval += oldval;
     }
 
-    setenv(var, nval->c_str(), 1);
+    _setenv(var, nval->c_str(), 1);
 }
 
 compilerver parsecompilerversion(const char *compilerversion)
@@ -649,12 +661,12 @@ std::string &realpath(const char *file, std::string &result, realpathcmp cmp)
 
     do
     {
-        if (*p == ':') p++;
+        if (*p == ';') p++;
 
-        while (*p && *p != ':')
+        while (*p && *p != ';')
             sfile += *p++;
 
-        sfile += "/";
+        sfile += "\\";
         sfile += file;
 
         if (!stat(sfile.c_str(), &st) && (!cmp || cmp(sfile.c_str(), st)))
@@ -673,11 +685,12 @@ bool getpathofcommand(const char *command, std::string &result)
         return !access(f, F_OK|X_OK);
     });
 
-    size_t pos = result.find_last_of("/");
+    size_t pos = result.find_last_of("\\");
 
     if (pos != std::string::npos)
         result.resize(pos);
 
+    
     return !result.empty();
 }
 
@@ -687,21 +700,38 @@ int runcommand(const char *command, char *buf, size_t len)
         return RUNCOMMAND_ERROR;
 
     FILE *p;
-    size_t outputlen;
+    size_t outputlen = 0;
+    char *tmpbuf;
+    int ret = 0;
 
-    if (!(p = popen(command, "r")) || !(outputlen = fread(buf, sizeof(char), len - 1, p)))
-    {
-        if (p) pclose(p);
-        return RUNCOMMAND_ERROR;
+    if ((p = _popen(command, "r")) != NULL) {
+        size_t tmplen = 0;
+        tmpbuf = buf;
+        while (!feof(p)) {
+            tmplen = fread(tmpbuf, sizeof(char), 128, p);
+
+            outputlen += tmplen;
+            tmpbuf += tmplen;
+
+            tmplen =0;
+        }
+
+        ret = _pclose(p);
+        buf[outputlen] = '\0';
+
+        return ret;
     }
+    
 
-    buf[outputlen] = '\0';
-    return pclose(p);
+     return RUNCOMMAND_ERROR;
 }
 
 void stripfilename(char *path)
 {
-    char *p = strrchr(path, '/');
+    char *p = strrchr(path, '\\');
+    if (p == NULL)
+        p = strrchr(path, '/');
+
     if (*p) *p = '\0';
 }
 
@@ -1208,7 +1238,7 @@ int main(int argc, char **argv)
 {
     std::string target;
     int targettype = -1;
-    const char *e = std::strrchr(argv[0], '/');
+    const char *e = std::strrchr(argv[0], '\\');
     const char *p = nullptr;
 
     bool iscxx = false;
@@ -1243,7 +1273,7 @@ int main(int argc, char **argv)
     if (!p++ || std::strncmp(p, "clang", STRLEN("clang")))
     {
         std::cerr << "invalid invocation name: clang should be followed "
-                     "after target (e.g.: w32-clang)" << std::endl;
+                     "after target (e.g.: w32-clang.exe)" << std::endl;
         return 1;
     }
 
@@ -1252,10 +1282,10 @@ int main(int argc, char **argv)
      */
 
     p += STRLEN("clang");
-    if (!std::strcmp(p, "++")) iscxx = true;
-    else if (*p) {
+    if (!std::strcmp(p, "++.exe")) iscxx = true;
+    else if ((p += STRLEN(".exe")) && *p) {
         std::cerr << "invalid invocation name: ++ (or nothing) should be "
-                     "followed after clang (e.g.: w32-clang++)" << std::endl;
+                     "followed after clang (e.g.: w32-clang.exe++)" << std::endl;
         return 1;
     }
 
@@ -1372,14 +1402,14 @@ int main(int argc, char **argv)
 
     if (iscxx)
     {
-        compiler = "clang++";
+        compiler = "clang++.exe";
 
         if (STRLEN(CXXFLAGS) > 0)
             cxxflags.push_back(CXXFLAGS);
     }
     else
     {
-        compiler = "clang";
+        compiler = "clang.exe";
 
         if (STRLEN(CFLAGS) > 0)
             cflags.push_back(CFLAGS);
@@ -1419,7 +1449,7 @@ int main(int argc, char **argv)
 
     if (cmdargs.islinkstep && cmdargs.usemingwlinker)
     {
-        compiler = target + (iscxx ? "-g++" : "-gcc");
+        compiler = target + (iscxx ? "-g++.exe" : "-gcc.exe");
 
         if (cmdargs.usemingwlinker > 1)
         {
@@ -1452,41 +1482,12 @@ int main(int argc, char **argv)
 
     if (!analyzerflags.empty() && std::strcmp(argv[argc-1], "-"))
     {
-        pid_t pid = fork();
-
-        if (pid > 0)
-        {
-            int status = 1;
-
-            if (waitpid(pid, &status, 0) == -1)
-            {
-                ERROR("waitpid() failed");
-                return 1;
-            }
-
-            if (WIFEXITED(status))
-            {
-                if (status)
-                    return status;
-            }
-            else
-            {
-                ERROR("uncaught signal?");
-                return 1;
-            }
-
-            analyzerflags.clear();
-        }
-        else if (pid < 0)
-        {
-            ERROR("fork() failed");
-            return  1;
-        }
+        throw std::string("Not supported!");
     }
 
     if (!cmdargs.cached)
     {
-        if (compiler[0] != '/')
+        if (compiler[0] != '\\')
         {
             std::string tmp;
 
@@ -1500,7 +1501,7 @@ int main(int argc, char **argv)
             tmp.swap(compiler);
 
             compiler = compilerbinpath;
-            compiler += "/";
+            compiler += "\\";
             compiler += tmp;
         }
 
@@ -1508,7 +1509,7 @@ int main(int argc, char **argv)
             /*
              * Find MinGW binaries (required for linking)
              */
-            std::string gcc = target + (iscxx ? "-g++" : "-gcc");
+            std::string gcc = target + (iscxx ? "-g++.exe" : "-gcc.exe");
             std::string path;
 
             const char *mingwpath = getenv("MINGW_PATH");
@@ -1529,6 +1530,7 @@ int main(int argc, char **argv)
                 return 1;
             }
 
+
 #if 0
             /*
              * COMPILER_PATH would be a perfect solution to get rid of the
@@ -1543,7 +1545,7 @@ int main(int argc, char **argv)
             {
                 /* https://github.com/tpoechtrager/wclang/issues/22 */
 
-                std::string command = cmdargs.target + "-gcc -print-libgcc-file-name";
+                std::string command = cmdargs.target + "-gcc.exe -print-libgcc-file-name";
                 char output[4096];
 
                 if (runcommand(command.c_str(), output, sizeof(output)) == 0)
