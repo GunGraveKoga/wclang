@@ -1802,6 +1802,7 @@ int main(int argc, char **argv)
 
     for (int i = 1; i < argc; ++i)
     {
+        
         const char *arg = argv[i];
         static constexpr size_t BUFSIZE = STRLEN(COMMANDPREFIX)+2;
         char buf[BUFSIZE];
@@ -1822,6 +1823,10 @@ int main(int argc, char **argv)
         {
             if (!std::strncmp(arg, "-Qunused", STRLEN("-Qunused")))
                 continue;
+        }
+
+        if (!std::strcmp(arg, "-fblocks") || !std::strcmp(arg, "-fno-constant-cfstrings") || !std::strncmp(arg, "-fobjc-runtime=", STRLEN("-fobjc-runtime="))) {
+            args.push_back("-Xclang");
         }
 
         args.push_back(argv[i]);
@@ -1876,7 +1881,6 @@ int main(int argc, char **argv)
     if (cmdargs.cached && !cmdargs.compilerpath.empty())
         setenv("COMPILER_PATH", cmdargs.compilerpath.c_str(), 1);
 #endif
-
     execvp(compiler.c_str(), cargs);
 
     std::cerr << "invoking compiler failed" << std::endl;
