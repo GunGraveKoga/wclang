@@ -20,7 +20,7 @@ __attribute__ ((noreturn))
 static inline void ERRORMSG(const char *msg, const char *file,
                             int line, const char *func);
 
-#define ERROR(msg) \
+#define RTERROR(msg) \
 do { \
     ERRORMSG(msg, __FILE__, __LINE__, __func__); \
 } while (0)
