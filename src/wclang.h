@@ -183,6 +183,7 @@ struct commandargs {
     bool iscompilestep;
     bool islinkstep;
     bool nointrinsics;
+    bool nooutput;
     int exceptions;
     int optimizationlevel;
     int usemingwlinker;
@@ -197,6 +198,6 @@ struct commandargs {
                 cxxpaths(cxxpaths), cflags(cflags), cxxflags(cxxflags), analyzerflags(analyzerflags),
                 linkerflags(linkerflags), target(target), compiler(compiler), compilerpath(compilerpath),
                 compilerbinpath(compilerbinpath), env(env), args(args), iscxx(iscxx),
-                appendexe(false), iscompilestep(false), islinkstep(false), nointrinsics(false),
+                appendexe(false), iscompilestep(false), islinkstep(false), nointrinsics(false), nooutput(false),
                 exceptions(-1), optimizationlevel(0), usemingwlinker(0) {}
 } __attribute__ ((aligned (8)));

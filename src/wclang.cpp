@@ -1358,6 +1358,7 @@ static void parseargs(int argc, char **argv, const char *target,
     {
         /* w32-clang file.c */
         cmdargs.islinkstep = true;
+        cmdargs.nooutput = true;
     }
 
     for (auto dc : delayedcommands)
@@ -1831,6 +1832,11 @@ int main(int argc, char **argv)
         }
 
         args.push_back(argv[i]);
+    }
+
+    if (cmdargs.nooutput) {
+        args.push_back("-o");
+        args.push_back("a.exe");
     }
 
     cargs = new char* [args.size()+2];
