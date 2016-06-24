@@ -1422,6 +1422,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
+
     /*
      * Load cache when requested
      */
@@ -1732,7 +1733,7 @@ int main(int argc, char **argv)
              * case a file is not found in our directories
              */
             args.push_back("-nostdinc");
-            args.push_back("-nostdinc++");
+            if (cmdargs.iscxx) args.push_back("-nostdinc++");
 
             auto pushdirs = [&](const string_vector &paths)
             {
