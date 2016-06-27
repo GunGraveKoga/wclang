@@ -1557,14 +1557,16 @@ int main(int argc, char **argv)
     for (const char *var : ENVVARS)
     {
         size_t len = std::strlen(var);
-        char *buf = new char[1+len+1];
+        char *buf = new char[1+len+4+1];
 
-        buf[len+1] = '\0';
+        buf[len+4+1] = '\0';
         *buf++ = '-';
 
         for (size_t i = 0; i < len; ++i)
             buf[i] = tolower(var[i]);
 
+        std::strncpy(buf+len, ".exe", STRLEN(".exe"));
+        
         envvar(env, var, target.c_str(), --buf);
         delete[] buf;
     }
